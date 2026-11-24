@@ -1,0 +1,6 @@
+[project]
+name = "balance-service"
+version = "1.0.0"
+description = "service2 exposed with Graftcode (wraps the existing logic.change_balance)"
+requires-python = ">=3.9"
+dependencies = ["aio-pika"]

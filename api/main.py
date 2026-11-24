@@ -1,10 +1,15 @@
+import json
 from functools import lru_cache
 from typing import Annotated
 
 import uvicorn
-from broker import a_publish_to_rabbitmq, publish_to_rabbitmq
 from config import Settings
 from fastapi import Depends, FastAPI
+from fastapi.concurrency import run_in_threadpool
+from graft_pypi_balance_service import GraftConfig as BalanceGraftConfig
+from graft_pypi_balance_service.balance_graft import BalanceService
+from graft_pypi_notify_service import GraftConfig as NotifyGraftConfig
+from graft_pypi_notify_service.notify_graft import NotifyService
 
 description = """
 Microservice boilerplate 🚀
@@ -27,6 +32,8 @@ Microservice boilerplate 🚀
 """
 
 settings = Settings()
+NotifyGraftConfig.host = settings.first_service_graft_host
+BalanceGraftConfig.host = settings.second_service_graft_host
 app = FastAPI(description=description)
 
 
@@ -37,23 +44,13 @@ def get_settings():
 
 @app.post("/api/user/subscribe")
 def subscribe_user(data: dict, settings: Annotated[Settings, Depends(get_settings)]):
-    publish_to_rabbitmq(
-        queue_name=settings.queue_name_to_first_service,
-        exchanger=settings.exchanger,
-        routing_key=settings.routing_key_to_first_service,
-        data=data
-    )
+    NotifyService.notify_user(json.dumps(data))
     return {"detail": "User subscribed."}
 
 
 @app.post("/api/order/checkout")
 async def order_checkout(data: dict, settings: Annotated[Settings, Depends(get_settings)]):
-    await a_publish_to_rabbitmq(
-        queue_name=settings.queue_name_to_second_service,
-        exchanger=settings.exchanger,
-        routing_key=settings.routing_key_to_second_service,
-        data=data
-    )
+    await run_in_threadpool(BalanceService.change_balance, json.dumps(data))
     return {"detail": "Order created."}
 
 

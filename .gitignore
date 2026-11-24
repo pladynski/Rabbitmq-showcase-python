@@ -1,2 +1,4 @@
 .venv/
 *.pyc
+# Graftcode Gateway runtime cache
+.graftcode/

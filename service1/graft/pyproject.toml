@@ -1,0 +1,6 @@
+[project]
+name = "notify-service"
+version = "1.0.0"
+description = "service1 exposed with Graftcode (wraps the existing logic.notify_user)"
+requires-python = ">=3.9"
+dependencies = ["pika"]
